@@ -287,6 +287,7 @@ def fit_model(
     random_key: Optional = None,
     n_steps_per_call: int = 500,
     n_steps_max: int = 2000,
+    return_all_losses=False,
     ):
   """Fits a model to convergence, by repeatedly calling train_model.
   
@@ -301,6 +302,7 @@ def fit_model(
     n_steps_per_call: The number of steps to give to train_model (default=1000)
     n_steps_max: The maximum number of iterations to run, even if convergence
       is not reached (default=1000)
+    return_all_losses: if True, return list of all loseses over training.
   """
   if random_key is None:
     random_key = jax.random.PRNGKey(0)
@@ -318,6 +320,7 @@ def fit_model(
   converged = False
   loss = np.inf
   n_calls_to_train_model = 0
+  all_losses = []
   while continue_training:
     params, opt_state, losses = train_model(
         model_fun,
@@ -333,6 +336,7 @@ def fit_model(
     t_start = time.time()
 
     loss_new = losses['training_loss'][-1]
+    all_losses += list(losses['training_loss'])
     # Declare "converged" if loss has not improved very much (but has improved)
     if not np.isinf(loss): 
       convergence_value = np.abs((loss_new - loss)) / loss
@@ -355,7 +359,10 @@ def fit_model(
     print(msg + f' Time elapsed = {time.time()-t_start:0.1}s.')
     loss = loss_new
 
-  return params, loss
+  if return_all_losses:
+    return params, loss, all_losses
+  else:
+    return params, loss
 
 
 def eval_model(
