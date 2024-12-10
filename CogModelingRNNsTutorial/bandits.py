@@ -8,6 +8,8 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+from scipy.stats import norm
+
 
 from . import rnn_utils
 DatasetRNN = rnn_utils.DatasetRNN
@@ -129,6 +131,96 @@ class AgentQ:
     # you will not be able to modify them directly because you will be viewing
     # a copy.
     return self._q.copy()
+
+class ThompsonAgent:
+  """An agent that runs simple Q-learning for the y-maze tasks.
+
+  Attributes:
+    alpha: The agent's learning rate
+    beta: The agent's softmax temperature
+    q: The agent's current estimate of the reward probability on each arm
+  """
+
+  def __init__(
+      self,
+      innov_variance = 100,
+      noise_variance = 10,
+      n_actions: int = 2.):
+    """Update the agent after one step of the task.
+
+    Args:
+      alpha: scalar learning rate
+      beta: scalar softmax inverse temperature parameter.
+      n_actions: number of actions (default=2)
+      forgetting_rate: rate at which q values decay toward the initial values (default=0)
+      perseveration_bias: rate at which q values move toward previous action (default=0)
+    """
+    ### my setup ###
+    self.innov_variance = innov_variance
+    self.noise_variance = noise_variance
+    ################
+    self._n_actions = n_actions
+    self.new_sess()
+
+
+
+
+  def new_sess(self):
+    """Reset the agent for the beginning of a new session."""
+    self.kalman_gain = np.zeros(self._n_actions)
+    self.post_variance = np.ones(self._n_actions) * 10
+    self.post_mean = np.zeros(self._n_actions)
+    self.V_t = 0
+    self.P_thompson = np.zeros(self._n_actions)
+
+  def get_choice_probs(self) -> np.ndarray:
+    """Compute the choice probabilities as softmax over q."""
+
+    ### my code ###
+    self.V_t = self.post_mean[0] - self.post_mean[1]
+    sigma2_1 = self.post_variance[0]  # Variance of arm 1
+    sigma2_2 = self.post_variance[1]  # Variance of arm 2
+
+    # Compute the standard deviation for the combined variance
+    self.std_dev = np.sqrt(sigma2_1 + sigma2_2)
+
+    # Calculate the probability P(a_t = 1)
+    self.P_thompson[0] = norm.cdf((self.V_t / self.std_dev))
+    self.P_thompson[1] = 1 - self.P_thompson[0]
+    ################
+    return self.P_thompson
+
+  def get_choice(self) -> int:
+    """Sample a choice, given the agent's current internal state."""
+    choice_probs = self.get_choice_probs()
+    choice = np.random.choice(self._n_actions, p=choice_probs)
+    return choice
+
+  def update(self,
+             choice: int,
+             reward: int):
+    """Update the agent after one step of the task.
+
+    Args:
+      choice: The choice made by the agent. 0 or 1
+      reward: The reward received by the agent. 0 or 1
+    """
+
+    # my code:
+    self.kalman_gain[choice] = self.post_variance[choice] / (self.post_variance[choice] + self.noise_variance)
+
+    self.post_variance[choice] = (1 - self.kalman_gain[choice]) * self.post_variance[choice]
+    self.post_mean[choice] = self.post_mean[choice] + self.kalman_gain[choice] * (reward - self.post_mean[choice])
+
+
+  @property
+  def q(self):
+    # This establishes q as an externally visible attribute of the agent.
+    # For agent = AgentQ(...), you can view the q values with agent.q; however,
+    # you will not be able to modify them directly because you will be viewing
+    # a copy.
+    # leave this for now, so that their code still works
+    return self.post_mean.copy()
 
 
 class AgentNetwork:
@@ -367,6 +459,74 @@ class EnvironmentBanditsDrift:
   def n_actions(self) -> int:
     return self._n_actions
 
+class GershmanBandit:
+  """Environment for a drifting two-armed bandit task.
+
+  Reward probabilities on each arm are sampled randomly between 0 and 1. On each
+  trial, gaussian random noise is added to each.
+
+  Attributes:
+    sigma: A float, between 0 and 1, giving the magnitude of the drift
+    reward_probs: Probability of reward associated with each action
+    n_actions: number of actions available
+  """
+
+  def __init__(
+          self,
+          innov_variance = 100,
+          noise_variance = 10,
+          n_actions: int = 2,
+  ):
+    """Initialize the environment."""
+
+
+    # Initialize persistent properties
+    self._n_actions = n_actions
+    self.innov_variance = innov_variance,
+    self.noise_variance = noise_variance
+
+    # Sample new reward probabilities
+    self._new_sess()
+
+  def _new_sess(self):
+    # Pick new reward probabilities.
+    # Sample randomly between 0 and 1
+    self._reward_probs = np.random.normal(0, np.sqrt(self.innov_variance), self.n_actions)
+
+  def step(self, choice: int) -> int:
+    """Run a single trial of the task.
+
+    Args:
+      choice: integer specifying choice made by the agent (must be less than
+        n_actions.)
+
+    Returns:
+      reward: The reward to be given to the agent.
+
+    """
+    # Check inputs
+    if choice not in range(self._n_actions):
+      msg = (
+        f'Found value for choice of {choice}, but must be in '
+        f'{list(range(self._n_actions))}')
+      raise ValueError(msg)
+
+    # define reward for each step
+    reward = np.random.normal(self._reward_probs, np.sqrt(self.noise_variance), self.n_actions)
+
+    # Sample reward with the probability of the chosen side
+    reward = reward[choice]
+
+    return reward
+
+  @property
+  def reward_probs(self) -> np.ndarray:
+    return self._reward_probs.copy()
+
+  @property
+  def n_actions(self) -> int:
+    return self._n_actions
+
 
 class BanditSession(NamedTuple):
   """Holds data for a single session of a bandit task."""
@@ -375,8 +535,8 @@ class BanditSession(NamedTuple):
   timeseries: np.ndarray
   n_trials: int
 
-Agent = Union[AgentQ, AgentNetwork]
-Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift]
+Agent = Union[AgentQ, AgentNetwork, ThompsonAgent]
+Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift, GershmanBandit]
 
 
 def run_experiment(agent: Agent,
