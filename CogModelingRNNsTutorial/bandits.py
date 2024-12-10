@@ -515,9 +515,9 @@ class GershmanBandit:
     reward = np.random.normal(self._block_mean, np.sqrt(self.noise_variance), self.n_actions)
 
     # Sample reward with the probability of the chosen side
-    reward = reward[choice]
+    received_reward = int(reward[choice])
 
-    return reward
+    return received_reward
 
   @property
   def reward_probs(self) -> np.ndarray:
