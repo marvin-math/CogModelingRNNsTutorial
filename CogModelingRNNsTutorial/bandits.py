@@ -491,7 +491,7 @@ class GershmanBandit:
   def _new_sess(self):
     # Pick new reward probabilities.
     # Sample randomly between 0 and 1
-    self._reward_probs = np.random.normal(0, np.sqrt(self.innov_variance), self.n_actions)
+    self._block_mean = np.random.normal(0, np.sqrt(self.innov_variance), self.n_actions)
 
   def step(self, choice: int) -> int:
     """Run a single trial of the task.
@@ -512,7 +512,7 @@ class GershmanBandit:
       raise ValueError(msg)
 
     # define reward for each step
-    reward = np.random.normal(self._reward_probs, np.sqrt(self.noise_variance), self.n_actions)
+    reward = np.random.normal(self._block_mean, np.sqrt(self.noise_variance), self.n_actions)
 
     # Sample reward with the probability of the chosen side
     reward = reward[choice]
@@ -521,7 +521,7 @@ class GershmanBandit:
 
   @property
   def reward_probs(self) -> np.ndarray:
-    return self._reward_probs.copy()
+    return self._block_mean.copy()
 
   @property
   def n_actions(self) -> int:
