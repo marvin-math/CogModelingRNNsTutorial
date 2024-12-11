@@ -163,13 +163,14 @@ class ThompsonAgent:
     #self.post_variance = np.ones(self._n_actions) * 10
     #self.post_mean = np.zeros(self._n_actions)
     #self.V_t = 0
-    #self.P_thompson = np.zeros(self._n_actions)
+    #self.P_thompson = np.zeros(self._n_actions‚)
     self.V_t = np.zeros(self.n_states)
 
     self.P_a0_thompson = np.zeros(self.n_states)
     self.post_mean = np.zeros((self._n_actions, self.n_states))
-    self.post_variance = np.ones((self._n_actions, self.n_states)) * 10
+    self.post_variance = np.ones((self._n_actions, self.n_states)) * 5
     self.kalman_gain = np.zeros((self._n_actions, self.n_states))
+    print("new session in the agent started")
 
   def get_choice_probs(self, state) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
@@ -505,6 +506,7 @@ class GershmanBandit:
     # Pick new reward probabilities.
     # Sample randomly between 0 and 1
     self._block_mean = np.random.normal(0, np.sqrt(self.innov_variance), self._n_actions)
+    print("new session started")
 
   def step(self, choice: int) -> int:
     """Run a single trial of the task.
