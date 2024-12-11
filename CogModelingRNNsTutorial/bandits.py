@@ -133,12 +133,7 @@ class AgentQ:
     return self._q.copy()
 
 class ThompsonAgent:
-  """An agent that runs simple Q-learning for the y-maze tasks.
-
-  Attributes:
-    alpha: The agent's learning rate
-    beta: The agent's softmax temperature
-    q: The agent's current estimate of the reward probability on each arm
+  """Thompson Sampling agent for the two-armed bandit task.
   """
 
   def __init__(
@@ -148,12 +143,7 @@ class ThompsonAgent:
       n_actions: int = 2.):
     """Update the agent after one step of the task.
 
-    Args:
-      alpha: scalar learning rate
-      beta: scalar softmax inverse temperature parameter.
-      n_actions: number of actions (default=2)
-      forgetting_rate: rate at which q values decay toward the initial values (default=0)
-      perseveration_bias: rate at which q values move toward previous action (default=0)
+
     """
     ### my setup ###
     self.innov_variance = innov_variance
@@ -170,7 +160,7 @@ class ThompsonAgent:
     self.kalman_gain = np.zeros(self._n_actions)
     self.post_variance = np.ones(self._n_actions) * 10
     self.post_mean = np.zeros(self._n_actions)
-    self.V_t = 0
+    #self.V_t = 0
     self.P_thompson = np.zeros(self._n_actions)
 
   def get_choice_probs(self) -> np.ndarray:
@@ -203,7 +193,7 @@ class ThompsonAgent:
 
     Args:
       choice: The choice made by the agent. 0 or 1
-      reward: The reward received by the agent. 0 or 1
+      reward: The reward received by the agent.
     """
 
     # my code:
@@ -462,8 +452,7 @@ class EnvironmentBanditsDrift:
 class GershmanBandit:
   """Environment for a drifting two-armed bandit task.
 
-  Reward probabilities on each arm are sampled randomly between 0 and 1. On each
-  trial, gaussian random noise is added to each.
+  Bandit design after Gershman (2018) - each block has a mean reward value
 
   Attributes:
     sigma: A float, between 0 and 1, giving the magnitude of the drift
