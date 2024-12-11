@@ -161,7 +161,8 @@ class ThompsonAgent:
     self.post_variance = np.ones(self._n_actions) * 10
     self.post_mean = np.zeros(self._n_actions)
     #self.V_t = 0
-    self.P_thompson = np.zeros(self._n_actions)
+    #self.P_thompson = np.zeros(self._n_actions)
+    self.P_thompson = 0
 
   def get_choice_probs(self) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
@@ -175,15 +176,17 @@ class ThompsonAgent:
     self.std_dev = np.sqrt(sigma2_1 + sigma2_2)
 
     # Calculate the probability P(a_t = 1)
-    self.P_thompson[0] = norm.cdf((self.V_t / self.std_dev))
-    self.P_thompson[1] = 1 - self.P_thompson[0]
+    self.P_thompson = norm.cdf((self.V_t / self.std_dev))
+    #self.P_thompson[1] = 1 - self.P_thompson[0]
     ################
     return self.P_thompson
 
   def get_choice(self) -> int:
     """Sample a choice, given the agent's current internal state."""
     choice_probs = self.get_choice_probs()
-    choice = np.random.choice(self._n_actions, p=choice_probs)
+    #choice = np.random.choice(self._n_actions, p=choice_probs)
+    choice = 0 if np.random.rand() < choice_probs else 1
+
     return choice
 
   def update(self,
