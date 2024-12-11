@@ -140,6 +140,7 @@ class ThompsonAgent:
       self,
       innov_variance = 100,
       noise_variance = 10,
+      n_states = 10,
       n_actions: int = 2.):
     """Update the agent after one step of the task.
 
@@ -150,6 +151,7 @@ class ThompsonAgent:
     self.noise_variance = noise_variance
     ################
     self._n_actions = n_actions
+    self.n_states = n_states
     self.new_sess()
 
 
@@ -157,33 +159,38 @@ class ThompsonAgent:
 
   def new_sess(self):
     """Reset the agent for the beginning of a new session."""
-    self.kalman_gain = np.zeros(self._n_actions)
-    self.post_variance = np.ones(self._n_actions) * 10
-    self.post_mean = np.zeros(self._n_actions)
+    #self.kalman_gain = np.zeros(self._n_actions)
+    #self.post_variance = np.ones(self._n_actions) * 10
+    #self.post_mean = np.zeros(self._n_actions)
     #self.V_t = 0
     #self.P_thompson = np.zeros(self._n_actions)
-    self.P_thompson = 0
+    self.V_t = np.zeros(self.n_states)
 
-  def get_choice_probs(self) -> np.ndarray:
+    self.P_a0_thompson = np.zeros(self.n_states)
+    self.post_mean = np.zeros((self._n_actions, self.n_states))
+    self.post_variance = np.ones((self._n_actions, self.n_states)) * 10
+    self.kalman_gain = np.zeros((self._n_actions, self.n_states))
+
+  def get_choice_probs(self, state) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
 
     ### my code ###
-    self.V_t = self.post_mean[0] - self.post_mean[1]
-    sigma2_1 = self.post_variance[0]  # Variance of arm 1
-    sigma2_2 = self.post_variance[1]  # Variance of arm 2
+    self.V_t[state] = self.post_mean[0][state] - self.post_mean[1][state]
+    sigma2_1 = self.post_variance[0][state]  # Variance of arm 1
+    sigma2_2 = self.post_variance[1][state]  # Variance of arm 2
 
     # Compute the standard deviation for the combined variance
     self.std_dev = np.sqrt(sigma2_1 + sigma2_2)
 
     # Calculate the probability P(a_t = 1)
-    self.P_thompson = norm.cdf((self.V_t / self.std_dev))
+    self.P_a0_thompson[state] = norm.cdf((self.V_t[state] / self.std_dev))
     #self.P_thompson[1] = 1 - self.P_thompson[0]
     ################
-    return self.P_thompson
+    return self.P_a0_thompson[state]
 
-  def get_choice(self) -> int:
+  def get_choice(self, state) -> int:
     """Sample a choice, given the agent's current internal state."""
-    choice_probs = self.get_choice_probs()
+    choice_probs = self.get_choice_probs(state)
     #choice = np.random.choice(self._n_actions, p=choice_probs)
     choice = 0 if np.random.rand() < choice_probs else 1
 
@@ -191,7 +198,8 @@ class ThompsonAgent:
 
   def update(self,
              choice: int,
-             reward: int):
+             reward: int,
+             state: int):
     """Update the agent after one step of the task.
 
     Args:
@@ -199,11 +207,24 @@ class ThompsonAgent:
       reward: The reward received by the agent.
     """
 
-    # my code:
-    self.kalman_gain[choice] = self.post_variance[choice] / (self.post_variance[choice] + self.noise_variance)
+    if state < self.n_states - 1:
 
-    self.post_variance[choice] = (1 - self.kalman_gain[choice]) * self.post_variance[choice]
-    self.post_mean[choice] = self.post_mean[choice] + self.kalman_gain[choice] * (reward - self.post_mean[choice])
+      for i in range(self._n_actions):
+        if choice == i:
+
+          self.kalman_gain[i][state] = self.post_variance[i][state] / (
+                    self.post_variance[i][state] + self.noise_variance)
+          # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
+          # self.innov_variance + self.noise_variance)
+          # else:
+          # self.kalman_gain[i][state] = 0
+          self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
+            state] * (reward - self.post_mean[i][state])
+
+        else:
+          self.post_variance[i][state + 1] = self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state]
 
 
   @property
@@ -552,11 +573,11 @@ def run_experiment(agent: Agent,
     # First record environment reward probs
     reward_probs[trial] = environment.reward_probs
     # First agent makes a choice
-    choice = agent.get_choice()
+    choice = agent.get_choice(trial)
     # Then environment computes a reward
     reward = environment.step(choice)
     # Finally agent learns
-    agent.update(choice, reward)
+    agent.update(choice, reward, trial)
     # Log choice and reward
     choices[trial] = choice
     rewards[trial] = reward
