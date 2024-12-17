@@ -611,9 +611,12 @@ def plot_session(choices: np.ndarray,
   improved_reward = rewards_diff > 0
   decreased_reward = rewards_diff < 0
 
+  """  improved_reward = rewards > 0
+  decreased_reward = rewards < 0"""
+
   # Determine y-axis placement for markers
-  y_high = np.max(timeseries) + 5
-  y_low = np.min(timeseries) - 5
+  y_high = np.max(timeseries) + 1
+  y_low = np.min(timeseries) - 1
 
   # Make the plot
   if fig_ax is None:
