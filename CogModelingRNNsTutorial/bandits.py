@@ -597,70 +597,68 @@ def plot_session(choices: np.ndarray,
                  timeseries_name: str,
                  labels: Optional[List[str]] = None,
                  fig_ax: Optional = None):
-  """Plot data from a single behavioral session of the bandit task."""
+  """Plot data from a single behavioral session of the bandit task.
 
+  Tracks whether rewards from choices improve over time.
+  """
+
+  # Identify choices
   choose_high = choices == 1
   choose_low = choices == 0
-  rewarded = rewards == 1
 
-  y_high = np.max(timeseries) + 0.1
-  y_low = np.min(timeseries) - 0.1
+  # Compare current reward with previous reward
+  rewards_diff = np.diff(rewards, prepend=rewards[0])
+  improved_reward = rewards_diff > 0
+  decreased_reward = rewards_diff < 0
+
+  # Determine y-axis placement for markers
+  y_high = np.max(timeseries) + 5
+  y_low = np.min(timeseries) - 5
 
   # Make the plot
   if fig_ax is None:
-    fig, ax = plt.subplots(1, figsize=(10, 3))
+    fig, ax = plt.subplots(1, figsize=(10, 4))
   else:
     fig, ax = fig_ax
+
+  # Plot timeseries
   if labels is not None:
     if timeseries.ndim == 1:
       timeseries = timeseries[:, None]
     if len(labels) != timeseries.shape[1]:
       raise ValueError('labels length must match timeseries.shape[1].')
     for i in range(timeseries.shape[1]):
-        ax.plot(timeseries[:, i], label=labels[i])
+      ax.plot(timeseries[:, i], label=labels[i])
     ax.legend(bbox_to_anchor=(1, 1))
-  else:  # Skip legend.
+  else:
     ax.plot(timeseries)
 
-  if choices.max() <= 1:
-    # Rewarded high
-    ax.scatter(
-        np.argwhere(choose_high & rewarded),
-        y_high * np.ones(np.sum(choose_high & rewarded)),
-        color='green',
-        marker=3)
-    ax.scatter(
-        np.argwhere(choose_high & rewarded),
-        y_high * np.ones(np.sum(choose_high & rewarded)),
-        color='green',
-        marker='|')
-    # Omission high
-    ax.scatter(
-        np.argwhere(choose_high & 1 - rewarded),
-        y_high * np.ones(np.sum(choose_high & 1 - rewarded)),
-        color='red',
-        marker='|')
-
-    # Rewarded low
-    ax.scatter(
-        np.argwhere(choose_low & rewarded),
-        y_low * np.ones(np.sum(choose_low & rewarded)),
-        color='green',
-        marker='|')
-    ax.scatter(
-        np.argwhere(choose_low & rewarded),
-        y_low * np.ones(np.sum(choose_low & rewarded)),
-        color='green',
-        marker=2)
-    # Omission Low
-    ax.scatter(
-        np.argwhere(choose_low & 1 - rewarded),
-        y_low * np.ones(np.sum(choose_low & 1 - rewarded)),
-        color='red',
-        marker='|')
+  # Place markers for improvement or decrease in reward
+  ax.scatter(
+    np.argwhere(choose_high & improved_reward),
+    y_high * np.ones(np.sum(choose_high & improved_reward)),
+    color='green', marker='^', label="High Choice Improved"
+  )
+  ax.scatter(
+    np.argwhere(choose_high & decreased_reward),
+    y_high * np.ones(np.sum(choose_high & decreased_reward)),
+    color='red', marker='v', label="High Choice Decreased"
+  )
+  ax.scatter(
+    np.argwhere(choose_low & improved_reward),
+    y_low * np.ones(np.sum(choose_low & improved_reward)),
+    color='green', marker='^', label="Low Choice Improved"
+  )
+  ax.scatter(
+    np.argwhere(choose_low & decreased_reward),
+    y_low * np.ones(np.sum(choose_low & decreased_reward)),
+    color='red', marker='v', label="Low Choice Decreased"
+  )
 
   ax.set_xlabel('Trial')
   ax.set_ylabel(timeseries_name)
+  ax.set_title("Session Choices and Reward Changes")
+  ax.legend(loc="upper right")
 
 
 def create_dataset(agent_cls: Callable[..., Agent],
