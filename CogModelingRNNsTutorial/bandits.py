@@ -663,10 +663,12 @@ def plot_session(choices: np.ndarray,
   ax.set_ylabel(timeseries_name)
 
 
-def create_dataset(agent: Agent,
-                   environment: Environment,
+def create_dataset(agent_cls: Callable[..., Agent],
+                   env_cls: Callable[..., Environment],
                    n_trials_per_session: int,
                    n_sessions: int,
+                   agent_kwargs: Optional[dict] = None,
+                   env_kwargs: Optional[dict] = None,
                    batch_size: Optional[int] = None):
   """Generates a behavioral dataset from a given agent and environment.
 
@@ -687,10 +689,16 @@ def create_dataset(agent: Agent,
   ys = np.zeros((n_trials_per_session, n_sessions, 1))
   experiment_list = []
 
+  # Default kwargs if none are provided
+  agent_kwargs = agent_kwargs or {}
+  env_kwargs = env_kwargs or {}
+
   for sess_i in np.arange(n_sessions):
     # initialize agent and environment
-    environment = Environment()
-    agent = Agent()
+
+    agent = agent_cls(**agent_kwargs)
+    environment = env_cls(**env_kwargs)
+
     experiment = run_experiment(agent, environment, n_trials_per_session)
     experiment_list.append(experiment)
     prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
