@@ -688,6 +688,9 @@ def create_dataset(agent: Agent,
   experiment_list = []
 
   for sess_i in np.arange(n_sessions):
+    # initialize agent and environment
+    environment = Environment()
+    agent = Agent()
     experiment = run_experiment(agent, environment, n_trials_per_session)
     experiment_list.append(experiment)
     prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
