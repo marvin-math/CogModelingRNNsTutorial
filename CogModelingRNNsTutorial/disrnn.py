@@ -365,7 +365,7 @@ def plot_update_rules(params, make_network):
       reward_sensitive = np.any(update_mlp_inputs == 1)
       # Choose which observations to use based on input bottlenecks
       if choice_sensitive and reward_sensitive:
-        observations = ([0, 0], [0, 1], [1, 0], [1, 1])
+        observations = ([0, 1], [0, 20], [1, 1], [1, 20])
         titles = ('Left, Unrewarded',
                   'Left, Rewarded',
                   'Right, Unrewarded',
@@ -375,7 +375,7 @@ def plot_update_rules(params, make_network):
         titles = ('Choose Left', 'Choose Right')
       elif reward_sensitive:
         observations = ([0, 0], [0, 1])
-        titles = ('Rewarded', 'Unreward')
+        titles = ('Rewarded', 'Unrewarded')
       else:
         observations = ([0, 0],)
         titles = ('All Trials',)
