@@ -374,7 +374,7 @@ def plot_update_rules(params, make_network):
         observations = ([0, 0], [1, 0])
         titles = ('Choose Left', 'Choose Right')
       elif reward_sensitive:
-        observations = ([0, 0], [0, 1])
+        observations = ([0, -20], [0, 20])
         titles = ('Rewarded', 'Unrewarded')
       else:
         observations = ([0, 0],)
