@@ -720,8 +720,8 @@ def run_experiment(agent: Agent,
       reward = environment.step(choice)
       agent.update(choice, reward)
       agent.update_kalman(choice, reward)
-      post_mean[trial][choice] = agent.post_mean
-      post_variance[trial][choice] = agent.post_variance
+      post_mean[trial] = agent.post_mean
+      post_variance[trial] = agent.post_variance
       V_t[trial] = agent.V_t
       choices[trial] = choice
       rewards[trial] = reward
