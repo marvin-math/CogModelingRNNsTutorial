@@ -705,7 +705,7 @@ def run_experiment(agent: Agent,
     reward_probs[trial] = environment.reward_probs
 
     # Finally agent learns
-    if agent != AgentNetwork:
+    if not callable(agent):
       # First agent makes a choice
       choice = agent.get_choice(trial)
       # Then environment computes a reward
@@ -714,7 +714,7 @@ def run_experiment(agent: Agent,
     # Log choice and reward
       choices[trial] = choice
       rewards[trial] = reward
-    if agent == AgentNetwork:
+    else:
       choice = agent.get_choice()
       # Then environment computes a reward
       reward = environment.step(choice)
