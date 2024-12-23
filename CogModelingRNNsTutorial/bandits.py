@@ -870,6 +870,7 @@ def create_dataset(agent_cls,
       agent = agent_cls
       environment = env_cls(**env_kwargs)
 
+      agent.new_sess()
       experiment, kalman = run_experiment(agent, environment, n_trials_per_session)
       experiment_list.append(experiment)
       kalman_list.append(kalman)
