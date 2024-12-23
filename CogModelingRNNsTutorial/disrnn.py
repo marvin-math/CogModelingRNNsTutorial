@@ -256,28 +256,28 @@ def plot_update_rules(params, make_network):
   reference_state = np.zeros(initial_state.shape)
 
   def plot_update_1d(params, unit_i, observations, titles):
-    lim = 3
-    state_bins = np.linspace(-lim, lim, 20)
-    colormap = plt.cm.get_cmap('viridis', 3)
-    colors = colormap.colors
+    lim = 3 # plot limits
+    state_bins = np.linspace(-lim, lim, 20) #granularity of plot
+    colormap = plt.cm.get_cmap('viridis', 3) #color map
+    colors = colormap.colors #colors
 
     fig, ax = plt.subplots(
         1, len(observations), figsize=(len(observations) * 4, 5.5)
-    )
-    plt.subplot(1, len(observations), 1)
+    ) # size of the plot
+    plt.subplot(1, len(observations), 1) #subplot
     plt.ylabel('Updated Activity')
 
-    for observation_i in range(len(observations)):
-      observation = observations[observation_i]
-      plt.subplot(1, len(observations), observation_i + 1)
+    for observation_i in range(len(observations)): #iterates through list of queried observations
+      observation = observations[observation_i] #picks one
+      plt.subplot(1, len(observations), observation_i + 1) #position
 
       plt.plot((-3, 3), (-3, 3), '--', color='grey')
       plt.plot((-3, 3), (0, 0), color='black')
       plt.plot((0, 0), (-3, 3), color='black')
 
-      delta_states = np.zeros(shape=(len(state_bins), 1))
+      delta_states = np.zeros(shape=(len(state_bins), 1)) #initialize an array that will store the updated states - as many as granularity of the plot
       for s_i in np.arange(len(state_bins)):
-        state = reference_state
+        state = reference_state #this mirrors the state space (have to figure out dimensionality of this)
         state[0, unit_i] = state_bins[s_i]
         _, next_state = step_hk(
             params, key, observation, state
