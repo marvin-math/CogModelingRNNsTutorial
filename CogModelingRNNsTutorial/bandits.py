@@ -829,27 +829,48 @@ def create_dataset(agent_cls: Callable[..., Agent],
   xs = np.zeros((n_trials_per_session, n_sessions, 2))
   ys = np.zeros((n_trials_per_session, n_sessions, 1))
   experiment_list = []
+  kalman_list = []
 
   # Default kwargs if none are provided
   agent_kwargs = agent_kwargs or {}
   env_kwargs = env_kwargs or {}
 
-  for sess_i in np.arange(n_sessions):
-    # initialize agent and environment
+  if agent_cls(**agent_kwargs) != AgentNetwork:
+    for sess_i in np.arange(n_sessions):
+      # initialize agent and environment
 
-    agent = agent_cls(**agent_kwargs)
-    environment = env_cls(**env_kwargs)
+      agent = agent_cls(**agent_kwargs)
+      environment = env_cls(**env_kwargs)
 
-    experiment = run_experiment(agent, environment, n_trials_per_session)
-    experiment_list.append(experiment)
-    prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
-    prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))
-    xs[:, sess_i] = np.swapaxes(
+      experiment = run_experiment(agent, environment, n_trials_per_session)
+      experiment_list.append(experiment)
+      prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
+      prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))
+      xs[:, sess_i] = np.swapaxes(
+          np.concatenate(([prev_choices], [prev_rewards]), axis=0), 0, 1)
+      ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
+
+    dataset = DatasetRNN(xs, ys, batch_size)
+    return dataset, experiment_list
+  else:
+    for sess_i in np.arange(n_sessions):
+      # initialize agent and environment
+
+      agent = agent_cls(**agent_kwargs)
+      environment = env_cls(**env_kwargs)
+
+      experiment, kalman = run_experiment(agent, environment, n_trials_per_session)
+      experiment_list.append(experiment)
+      kalman_list.append(kalman)
+      prev_choices = np.concatenate(([0], experiment.choices[0:-1]))
+      prev_rewards = np.concatenate(([0], experiment.rewards[0:-1]))
+      xs[:, sess_i] = np.swapaxes(
         np.concatenate(([prev_choices], [prev_rewards]), axis=0), 0, 1)
-    ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
+      ys[:, sess_i] = np.expand_dims(experiment.choices, 1)
 
-  dataset = DatasetRNN(xs, ys, batch_size)
-  return dataset, experiment_list
+    dataset = DatasetRNN(xs, ys, batch_size)
+    return dataset, experiment_list, kalman_list
+
 
 
 ###############
