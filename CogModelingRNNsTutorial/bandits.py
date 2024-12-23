@@ -358,7 +358,12 @@ class AgentNetwork:
       params: parameters for the network
       n_actions: number of permitted actions (default = 2)
     """
+    self.n_actions = n_actions
     self._state_to_numpy = state_to_numpy
+    self.noise_variance = 10
+
+    self.V_t = np.zeros(n_actions)
+    self.std_dev = np.zeros(n_actions)
 
     def _step_network(xs: np.ndarray,
                       state: hk.State) -> Tuple[np.ndarray, hk.State]:
@@ -372,8 +377,8 @@ class AgentNetwork:
         y_hat: output of RNN
         new_state: state of the hidden units of the RNN model
       """
-      core = make_network()
-      y_hat, new_state = core(xs, state)
+      core = make_network() #initialize the network
+      y_hat, new_state = core(xs, state) #apply the network
       return y_hat, new_state
 
     def _get_initial_state() -> hk.State:
@@ -382,13 +387,13 @@ class AgentNetwork:
       state = core.initial_state(1)
       return state
 
-    key = jax.random.PRNGKey(0)
-    model = hk.transform(_step_network)
+    key = jax.random.PRNGKey(0) # Random key for initialization
+    model = hk.transform(_step_network) # transformation required because jax is a functional programming library
     state = hk.transform(_get_initial_state)
 
-    self._initial_state = state.apply(params, key)
+    self._initial_state = state.apply(params, key) # forward inference
     self._model_fun = jax.jit(
-        lambda xs, state: model.apply(params, key, xs, state))
+        lambda xs, state: model.apply(params, key, xs, state)) #translates the function into a computation graph for improved efficiency
     self._xs = np.zeros((1, 2))
     self._n_actions = n_actions
     self.new_sess()
@@ -396,14 +401,17 @@ class AgentNetwork:
   def new_sess(self):
     """Reset the network for the beginning of a new session."""
     self._state = self._initial_state
+    self.post_mean = np.zeros(self.n_actions)
+    self.post_variance = np.ones(self.n_actions) * 10
+    self.kalman_gain = np.zeros(self.n_actions)
 
   def get_choice_probs(self) -> np.ndarray:
     """Predict the choice probabilities as a softmax over output logits."""
-    output_logits, _ = self._model_fun(self._xs, self._state)
+    output_logits, _ = self._model_fun(self._xs, self._state) #forward inference (on optimized apply function)
     output_logits = np.array(output_logits)
     output_logits = output_logits[0][:self._n_actions]
     choice_probs = np.exp(output_logits) / np.sum(
-        np.exp(output_logits))
+        np.exp(output_logits)) #inverse the softmax to get probabilities
     return choice_probs
 
   def get_choice(self) -> Tuple[int, np.ndarray]:
@@ -422,6 +430,15 @@ class AgentNetwork:
         self._state = new_state
     except:
       import pdb; pdb.set_trace()
+
+  def update_kalman(self, choice: int, reward):
+    # Update for the selected action
+    kalman_gain = self.post_variance[choice] / (self.post_variance[choice] + self.noise_variance)
+
+    # Update posterior mean and variance for the selected action
+    self.post_mean[choice] = self.post_mean[choice] + kalman_gain * (reward - self.post_mean[choice])
+    self.post_variance[choice] = (1 - kalman_gain) * self.post_variance[choice]
+
 
 class VanillaAgentQ(AgentQ):
   """This agent is a wrapper of AgentQ with only alpha and beta parameters."""
@@ -650,7 +667,14 @@ class BanditSession(NamedTuple):
   timeseries: np.ndarray
   n_trials: int
 
-Agent = Union[AgentQ, AgentNetwork, ThompsonAgent]
+class KalmanData(NamedTuple):
+  """Holds data for a single session of a bandit task."""
+  post_mean: np.ndarray
+  post_variance: np.ndarray
+  V_t: np.ndarray
+  n_trials: int
+
+Agent = Union[AgentQ, AgentNetwork, ThompsonAgent, UCBAgent]
 Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift, GershmanBandit]
 
 
@@ -671,6 +695,11 @@ def run_experiment(agent: Agent,
   rewards = np.zeros(n_trials)
   reward_probs = np.zeros((n_trials, environment.n_actions))
 
+  post_mean = np.zeros((n_trials, environment.n_actions))
+  post_variance = np.zeros((n_trials, environment.n_actions))
+  V_t = np.zeros((n_trials, environment.n_actions))
+
+
   for trial in np.arange(n_trials):
     # First record environment reward probs
     reward_probs[trial] = environment.reward_probs
@@ -679,16 +708,27 @@ def run_experiment(agent: Agent,
     # Then environment computes a reward
     reward = environment.step(choice)
     # Finally agent learns
-    agent.update(choice, reward, trial)
+    if agent != AgentNetwork:
+      agent.update(choice, reward, trial)
     # Log choice and reward
     choices[trial] = choice
     rewards[trial] = reward
+    if agent == AgentNetwork:
+      agent.update(choice, reward)
+      agent.update_kalman(choice, reward)
+      post_mean[trial][choice] = agent.post_mean
+      post_variance[trial][choice] = agent.post_variance
+      V_t[trial] = agent.V_t
 
   experiment = BanditSession(n_trials=n_trials,
                              choices=choices,
                              rewards=rewards,
                              timeseries=reward_probs)
-  return experiment
+  kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
+  if agent == AgentNetwork:
+    return experiment, kalman
+  else:
+    return experiment
 
 
 def plot_session(choices: np.ndarray,
