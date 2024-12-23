@@ -705,7 +705,7 @@ def run_experiment(agent: Agent,
     reward_probs[trial] = environment.reward_probs
 
     # Finally agent learns
-    if not callable(agent):
+    if callable(agent):
       # First agent makes a choice
       choice = agent.get_choice(trial)
       # Then environment computes a reward
