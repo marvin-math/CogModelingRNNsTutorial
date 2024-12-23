@@ -732,7 +732,7 @@ def run_experiment(agent: Agent,
                              rewards=rewards,
                              timeseries=reward_probs)
   kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
-  if agent == AgentNetwork:
+  if not callable(agent):
     return experiment, kalman
   else:
     return experiment
