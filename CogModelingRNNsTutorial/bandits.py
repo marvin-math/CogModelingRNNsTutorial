@@ -362,7 +362,6 @@ class AgentNetwork:
     self._state_to_numpy = state_to_numpy
     self.noise_variance = 10
 
-    self.V_t = np.zeros(n_actions)
     self.std_dev = np.zeros(n_actions)
 
     def _step_network(xs: np.ndarray,
@@ -404,6 +403,8 @@ class AgentNetwork:
     self.post_mean = np.zeros(self.n_actions)
     self.post_variance = np.ones(self.n_actions) * 10
     self.kalman_gain = np.zeros(self.n_actions)
+    self.V_t = 0
+
 
   def get_choice_probs(self) -> np.ndarray:
     """Predict the choice probabilities as a softmax over output logits."""
@@ -438,6 +439,7 @@ class AgentNetwork:
     # Update posterior mean and variance for the selected action
     self.post_mean[choice] = self.post_mean[choice] + kalman_gain * (reward - self.post_mean[choice])
     self.post_variance[choice] = (1 - kalman_gain) * self.post_variance[choice]
+    self.V_t = self.post_mean[0] - self.post_mean[1]
 
 
 class VanillaAgentQ(AgentQ):
