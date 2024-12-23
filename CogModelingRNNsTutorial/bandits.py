@@ -856,7 +856,7 @@ def create_dataset(agent_cls: Callable[..., Agent],
     for sess_i in np.arange(n_sessions):
       # initialize agent and environment
 
-      agent = agent_cls(**agent_kwargs)
+      agent = Agent
       environment = env_cls(**env_kwargs)
 
       experiment, kalman = run_experiment(agent, environment, n_trials_per_session)
