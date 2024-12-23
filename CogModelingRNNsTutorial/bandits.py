@@ -848,6 +848,8 @@ def create_dataset(agent_cls,
 
       agent = agent_cls(**agent_kwargs)
       environment = env_cls(**env_kwargs)
+      print(agent)
+      print(type(agent))
 
       experiment = run_experiment(agent, environment, n_trials_per_session)
       experiment_list.append(experiment)
