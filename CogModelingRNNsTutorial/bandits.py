@@ -697,7 +697,7 @@ def run_experiment(agent: Agent,
 
   post_mean = np.zeros((n_trials, environment.n_actions))
   post_variance = np.zeros((n_trials, environment.n_actions))
-  V_t = np.zeros((n_trials, environment.n_actions))
+  V_t = np.zeros(n_trials)
 
 
   for trial in np.arange(n_trials):
