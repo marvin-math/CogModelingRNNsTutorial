@@ -703,22 +703,29 @@ def run_experiment(agent: Agent,
   for trial in np.arange(n_trials):
     # First record environment reward probs
     reward_probs[trial] = environment.reward_probs
-    # First agent makes a choice
-    choice = agent.get_choice(trial)
-    # Then environment computes a reward
-    reward = environment.step(choice)
+
     # Finally agent learns
     if agent != AgentNetwork:
+      # First agent makes a choice
+      choice = agent.get_choice(trial)
+      # Then environment computes a reward
+      reward = environment.step(choice)
       agent.update(choice, reward, trial)
     # Log choice and reward
-    choices[trial] = choice
-    rewards[trial] = reward
+      choices[trial] = choice
+      rewards[trial] = reward
     if agent == AgentNetwork:
+      choice = agent.get_choice()
+      # Then environment computes a reward
+      reward = environment.step(choice)
       agent.update(choice, reward)
       agent.update_kalman(choice, reward)
       post_mean[trial][choice] = agent.post_mean
       post_variance[trial][choice] = agent.post_variance
       V_t[trial] = agent.V_t
+      choices[trial] = choice
+      rewards[trial] = reward
+
 
   experiment = BanditSession(n_trials=n_trials,
                              choices=choices,
