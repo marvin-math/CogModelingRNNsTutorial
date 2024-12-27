@@ -710,7 +710,7 @@ def run_experiment(agent: Agent,
     reward_probs[trial] = environment.reward_probs
 
     # Finally agent learns
-    if agent.identity == "trainedNet":
+    if agent.identity != "trainedNet":
       # First agent makes a choice
       choice = agent.get_choice(trial)
       # Then environment computes a reward
@@ -737,7 +737,7 @@ def run_experiment(agent: Agent,
                              rewards=rewards,
                              timeseries=reward_probs)
   kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
-  if not callable(agent):
+  if agent.identity == "trainedNet":
     return experiment, kalman
   else:
     return experiment
