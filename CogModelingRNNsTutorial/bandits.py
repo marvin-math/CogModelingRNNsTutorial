@@ -365,7 +365,7 @@ class AgentNetwork:
     self.noise_variance = 10
 
     self.std_dev = np.zeros(n_actions)
-    self.agent_identity = "trainedNet"
+    self.identity = "trainedNet"
 
     def _step_network(xs: np.ndarray,
                       state: hk.State) -> Tuple[np.ndarray, hk.State]:
@@ -853,8 +853,8 @@ def create_dataset(agent_cls,
 
       agent = agent_cls(**agent_kwargs)
       environment = env_cls(**env_kwargs)
-      print(agent)
-      print(type(agent))
+      #print(agent)
+      #print(type(agent))
 
       experiment = run_experiment(agent, environment, n_trials_per_session)
       experiment_list.append(experiment)
