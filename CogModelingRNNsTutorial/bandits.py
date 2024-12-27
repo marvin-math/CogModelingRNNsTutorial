@@ -152,6 +152,7 @@ class ThompsonAgent:
     ################
     self._n_actions = n_actions
     self.n_states = n_states
+    self.identity = "Thompson"
     self.new_sess()
 
 
@@ -257,6 +258,7 @@ class UCBAgent:
     self._n_actions = n_actions
     self.n_states = n_states
     self.new_sess()
+    self.identity = "UCB"
 
 
   def new_sess(self):
@@ -363,6 +365,7 @@ class AgentNetwork:
     self.noise_variance = 10
 
     self.std_dev = np.zeros(n_actions)
+    self.agent_identity = "trainedNet"
 
     def _step_network(xs: np.ndarray,
                       state: hk.State) -> Tuple[np.ndarray, hk.State]:
@@ -707,7 +710,7 @@ def run_experiment(agent: Agent,
     reward_probs[trial] = environment.reward_probs
 
     # Finally agent learns
-    if agent in Agent:
+    if agent.identity == "trainedNet":
       # First agent makes a choice
       choice = agent.get_choice(trial)
       # Then environment computes a reward
