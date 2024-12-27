@@ -676,7 +676,7 @@ class KalmanData(NamedTuple):
   V_t: np.ndarray
   n_trials: int
 
-Agent = Union[AgentQ, AgentNetwork, ThompsonAgent, UCBAgent]
+Agent = Union[AgentQ, ThompsonAgent, UCBAgent]
 Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift, GershmanBandit]
 
 
@@ -707,7 +707,7 @@ def run_experiment(agent: Agent,
     reward_probs[trial] = environment.reward_probs
 
     # Finally agent learns
-    if callable(agent):
+    if agent in Agent:
       # First agent makes a choice
       choice = agent.get_choice(trial)
       # Then environment computes a reward
