@@ -778,6 +778,9 @@ class BanditSession(NamedTuple):
   rewards: np.ndarray
   timeseries: np.ndarray
   n_trials: int
+  post_mean: np.ndarray
+  post_variance: np.ndarray
+  V_t: np.ndarray
 
 class KalmanData(NamedTuple):
   """Holds data for a single session of a bandit task."""
@@ -823,6 +826,9 @@ def run_experiment(agent: Agent,
       # Then environment computes a reward
       reward = environment.step(choice)
       agent.update(choice, reward, trial)
+      post_mean[trial] = agent.post_mean
+      post_variance[trial] = agent.post_variance
+      V_t[trial] = agent.V_t
     # Log choice and reward
       choices[trial] = choice
       rewards[trial] = reward
@@ -842,7 +848,10 @@ def run_experiment(agent: Agent,
   experiment = BanditSession(n_trials=n_trials,
                              choices=choices,
                              rewards=rewards,
-                             timeseries=reward_probs)
+                             timeseries=reward_probs,
+                             post_mean=post_mean,
+                             post_variance=post_variance,
+                             V_t=V_t)
   kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
   if agent.identity == "trainedNet":
     return experiment, kalman
