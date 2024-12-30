@@ -833,8 +833,8 @@ def run_experiment(agent: Agent,
       # Then environment computes a reward
       reward = environment.step(choice)
       agent.update(choice, reward, trial)
-      post_mean[trial] = agent.post_mean[trial]
-      post_variance[trial] = agent.post_variance[trial]
+      post_mean[:,trial] = agent.post_mean[:,trial]
+      post_variance[:,trial] = agent.post_variance[:,trial]
       V_t[trial] = agent.V_t[trial]
     # Log choice and reward
       choices[trial] = choice
