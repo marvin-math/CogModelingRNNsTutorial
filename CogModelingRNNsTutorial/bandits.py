@@ -835,8 +835,8 @@ def run_experiment(agent: Agent,
       agent.update(choice, reward, trial)
       V_t[trial] = agent.V_t[trial]
       #self.V_t[state] = self.post_mean[0][state] - self.post_mean[1][state]
-      TU = np.sqrt(agent.post_variance[0][trial] + agent.post_variance[1][trial])
-      RU = np.sqrt(agent.post_variance[0][trial]) - np.sqrt(agent.post_variance[1][trial])
+      TU[trial] = np.sqrt(agent.post_variance[0][trial] + agent.post_variance[1][trial])
+      RU[trial] = np.sqrt(agent.post_variance[0][trial]) - np.sqrt(agent.post_variance[1][trial])
       # Log choice and reward
       choices[trial] = choice
       rewards[trial] = reward
