@@ -810,9 +810,16 @@ def run_experiment(agent: Agent,
   rewards = np.zeros(n_trials)
   reward_probs = np.zeros((n_trials, environment.n_actions))
 
-  post_mean = np.zeros((n_trials, environment.n_actions))
-  post_variance = np.zeros((n_trials, environment.n_actions))
-  V_t = np.zeros(n_trials)
+
+  if agent.identity != "trainedNet":
+    post_mean = np.zeros((environment.n_actions, n_trials))
+    post_variance = np.zeros((environment.n_actions, n_trials))
+    V_t = np.zeros(n_trials)
+  else:
+    post_mean = np.zeros((n_trials, environment.n_actions))
+    post_variance = np.zeros((n_trials, environment.n_actions))
+    V_t = np.zeros(n_trials)
+
 
 
   for trial in np.arange(n_trials):
