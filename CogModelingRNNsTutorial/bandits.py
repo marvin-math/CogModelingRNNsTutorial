@@ -860,8 +860,9 @@ def run_experiment(agent: Agent,
                              V_t=V_t,
                              TU=TU,
                              RU=RU)
-  kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
   if agent.identity == "trainedNet":
+    kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
+
     return experiment, kalman
   else:
     return experiment
