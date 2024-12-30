@@ -340,6 +340,113 @@ class UCBAgent:
     return self.post_mean.copy()
 
 
+class HybridAgent:
+  """Thompson Sampling agent for the two-armed bandit task.
+  """
+
+  def __init__(
+      self,
+      innov_variance = 100,
+      noise_variance = 10,
+      n_states = 10,
+      n_actions: int = 2,
+      beta = 2,
+      gamma = 4):
+    """Update the agent after one step of the task.
+
+
+    """
+    ### my setup ###
+    self.innov_variance = innov_variance
+    self.noise_variance = noise_variance
+    self._n_actions = n_actions
+    self.n_states = n_states
+    self.beta = beta
+    self.gamma = gamma
+    self.new_sess()
+    self.identity = "hybrid"
+
+
+  def new_sess(self):
+    """Reset the agent for the beginning of a new session."""
+    #self.kalman_gain = np.zeros(self._n_actions)
+    #self.post_variance = np.ones(self._n_actions) * 10
+    #self.post_mean = np.zeros(self._n_actions)
+    #self.V_t = 0
+    #self.P_thompson = np.zeros(self._n_actions‚)
+    self.V_t = np.zeros(self.n_states)
+    self.P_a0_hybrid = np.zeros(self.n_states)
+    self.post_mean = np.zeros((self._n_actions, self.n_states))
+    self.post_variance = np.ones((self._n_actions, self.n_states)) * 5
+    self.kalman_gain = np.zeros((self._n_actions, self.n_states))
+
+    print("new session in the agent started")
+
+  def get_choice_probs(self, state) -> np.ndarray:
+    """Compute the choice probabilities as softmax over q."""
+
+    ### my code ###
+    self.V_t[state] = self.post_mean[0][state] - self.post_mean[1][state]
+    sigma1 = self.post_variance[0][state]  # Variance of arm 1
+    sigma2 = self.post_variance[1][state]  # Variance of arm 2
+
+
+    # Thompson
+    self.std_dev = np.sqrt(sigma1 + sigma2)
+
+    # Calculate the probability P(a_t = 0)
+    self.P_a0_hybrid[state] = norm.cdf(self.beta * (self.V_t[state] / self.std_dev) + self.gamma * (sigma1 - sigma2))
+
+    return self.P_a0_hybrid[state]
+
+  def get_choice(self, state) -> int:
+    """Sample a choice, given the agent's current internal state."""
+    choice_probs = self.get_choice_probs(state)
+    #choice = np.random.choice(self._n_actions, p=choice_probs)
+    choice = 0 if np.random.rand() < choice_probs else 1
+
+    return choice
+
+  def update(self,
+             choice: int,
+             reward: int,
+             state: int):
+    """Update the agent after one step of the task.
+
+    Args:
+      choice: The choice made by the agent. 0 or 1
+      reward: The reward received by the agent.
+    """
+
+    if state < self.n_states - 1:
+
+      for i in range(self._n_actions):
+        if choice == i:
+
+          self.kalman_gain[i][state] = self.post_variance[i][state] / (
+                    self.post_variance[i][state] + self.noise_variance)
+          # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
+          # self.innov_variance + self.noise_variance)
+          # else:
+          # self.kalman_gain[i][state] = 0
+          self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
+            state] * (reward - self.post_mean[i][state])
+
+        else:
+          self.post_variance[i][state + 1] = self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state]
+
+
+  @property
+  def q(self):
+    # This establishes q as an externally visible attribute of the agent.
+    # For agent = AgentQ(...), you can view the q values with agent.q; however,
+    # you will not be able to modify them directly because you will be viewing
+    # a copy.
+    # leave this for now, so that their code still works
+    return self.post_mean.copy()
+
 class AgentNetwork:
   """A class that allows running a pretrained RNN as an agent.
 
@@ -679,7 +786,7 @@ class KalmanData(NamedTuple):
   V_t: np.ndarray
   n_trials: int
 
-Agent = Union[AgentQ, ThompsonAgent, UCBAgent]
+Agent = Union[AgentQ, ThompsonAgent, UCBAgent, HybridAgent]
 Environment = Union[EnvironmentBanditsFlips, EnvironmentBanditsDrift, GershmanBandit]
 
 
@@ -847,7 +954,7 @@ def create_dataset(agent_cls,
   agent_kwargs = agent_kwargs or {}
   env_kwargs = env_kwargs or {}
 
-  if callable(agent_cls):
+  if callable(agent_cls): #think about whether this condition is correct. Might replace with if agent.identity != "trainedNet"
     for sess_i in np.arange(n_sessions):
       # initialize agent and environment
 
