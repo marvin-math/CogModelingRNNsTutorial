@@ -351,7 +351,7 @@ class HybridAgent:
       n_states = 10,
       n_actions: int = 2,
       beta = 2,
-      gamma = 4):
+      gamma = 2):
     """Update the agent after one step of the task.
 
 
