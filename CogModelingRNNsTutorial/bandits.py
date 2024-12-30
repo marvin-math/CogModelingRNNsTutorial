@@ -778,9 +778,9 @@ class BanditSession(NamedTuple):
   rewards: np.ndarray
   timeseries: np.ndarray
   n_trials: int
-  post_mean: np.ndarray
-  post_variance: np.ndarray
   V_t: np.ndarray
+  TU: np.ndarray
+  RU: np.ndarray
 
 class KalmanData(NamedTuple):
   """Holds data for a single session of a bandit task."""
@@ -812,9 +812,9 @@ def run_experiment(agent: Agent,
 
 
   if agent.identity != "trainedNet":
-    post_mean = np.zeros((environment.n_actions, n_trials))
-    post_variance = np.zeros((environment.n_actions, n_trials))
     V_t = np.zeros(n_trials)
+    TU = np.zeros(n_trials)
+    RU = np.zeros(n_trials)
   else:
     post_mean = np.zeros((n_trials, environment.n_actions))
     post_variance = np.zeros((n_trials, environment.n_actions))
@@ -833,10 +833,11 @@ def run_experiment(agent: Agent,
       # Then environment computes a reward
       reward = environment.step(choice)
       agent.update(choice, reward, trial)
-      post_mean[:,trial] = agent.post_mean[:,trial]
-      post_variance[:,trial] = agent.post_variance[:,trial]
       V_t[trial] = agent.V_t[trial]
-    # Log choice and reward
+      #self.V_t[state] = self.post_mean[0][state] - self.post_mean[1][state]
+      TU = np.sqrt(agent.post_variance[0][trial] + agent.post_variance[1][trial])
+      RU = np.sqrt(agent.post_variance[0][trial]) - np.sqrt(agent.post_variance[1][trial])
+      # Log choice and reward
       choices[trial] = choice
       rewards[trial] = reward
     else:
@@ -856,9 +857,9 @@ def run_experiment(agent: Agent,
                              choices=choices,
                              rewards=rewards,
                              timeseries=reward_probs,
-                             post_mean=post_mean,
-                             post_variance=post_variance,
-                             V_t=V_t)
+                             V_t=V_t,
+                             TU=TU,
+                             RU=RU)
   kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
   if agent.identity == "trainedNet":
     return experiment, kalman
