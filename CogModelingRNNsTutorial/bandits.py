@@ -852,20 +852,24 @@ def run_experiment(agent: Agent,
       choices[trial] = choice
       rewards[trial] = reward
 
-
-  experiment = BanditSession(n_trials=n_trials,
-                             choices=choices,
-                             rewards=rewards,
-                             timeseries=reward_probs,
-                             V_t=V_t,
-                             TU=TU,
-                             RU=RU)
-  if agent.identity == "trainedNet":
+  if agent.identity != "trainedNet":
+    experiment = BanditSession(n_trials=n_trials,
+                               choices=choices,
+                               rewards=rewards,
+                               timeseries=reward_probs,
+                               V_t=V_t,
+                               TU=TU,
+                               RU=RU)
+    return experiment
+  else:
+    experiment = BanditSession(n_trials=n_trials,
+                               choices=choices,
+                               rewards=rewards,
+                               timeseries=reward_probs,
+                               V_t=V_t)
     kalman = KalmanData(post_mean=post_mean, post_variance=post_variance, V_t=V_t, n_trials=n_trials)
 
     return experiment, kalman
-  else:
-    return experiment
 
 
 def plot_session(choices: np.ndarray,
