@@ -771,6 +771,12 @@ class GershmanBandit:
   def n_actions(self) -> int:
     return self._n_actions
 
+class BanditSession_net(NamedTuple):
+  choices: np.ndarray
+  rewards: np.ndarray
+  timeseries: np.ndarray
+  n_trials: int
+  V_t: np.ndarray
 
 class BanditSession(NamedTuple):
   """Holds data for a single session of a bandit task."""
@@ -862,7 +868,7 @@ def run_experiment(agent: Agent,
                                RU=RU)
     return experiment
   else:
-    experiment = BanditSession(n_trials=n_trials,
+    experiment = BanditSession_net(n_trials=n_trials,
                                choices=choices,
                                rewards=rewards,
                                timeseries=reward_probs,
