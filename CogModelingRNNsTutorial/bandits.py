@@ -350,7 +350,7 @@ class HybridAgent:
       noise_variance = 10,
       n_states = 10,
       n_actions: int = 2,
-      beta = 2,
+      beta = 1,
       gamma = 2):
     """Update the agent after one step of the task.
 
