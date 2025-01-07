@@ -178,7 +178,7 @@ class HkDisRNN(hk.RNNCore):
     return latents
 
 
-def plot_bottlenecks(params, sort_latents=True, obs_names=None):
+def plot_bottlenecks(params, title, sort_latents=True, obs_names=None):
   """Plot the bottleneck sigmas from an hk.CompartmentalizedRNN."""
   params_disrnn = params['hk_dis_rnn']
   latent_dim = params_disrnn['latent_sigmas_unsquashed'].shape[0]
@@ -236,7 +236,7 @@ def plot_bottlenecks(params, sort_latents=True, obs_names=None):
       rotation='vertical',
   )
   plt.ylabel('Latent #')
-  plt.title('Update MLP Bottlenecks')
+  plt.title(title)
   return fig
 
 def plot_update_rules(params, make_network):
