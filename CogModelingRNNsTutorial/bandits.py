@@ -395,7 +395,7 @@ class HybridAgent:
     self.std_dev = np.sqrt(sigma1 + sigma2)
 
     # Calculate the probability P(a_t = 0)
-    self.P_a0_hybrid[state] = norm.cdf(self.beta * (self.V_t[state] / self.std_dev) + self.gamma * (sigma1 - sigma2))
+    self.P_a0_hybrid[state] = norm.cdf(self.beta * self.V_t[state] / self.std_dev + self.gamma * (sigma1 - sigma2))
 
     return self.P_a0_hybrid[state]
 
