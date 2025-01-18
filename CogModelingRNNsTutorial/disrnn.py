@@ -404,3 +404,6 @@ def plot_update_rules(params, make_network):
       figs.append(fig)
 
   return figs
+
+def testingwaters():
+  print('testing the waters')
