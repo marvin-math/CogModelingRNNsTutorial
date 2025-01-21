@@ -485,7 +485,6 @@ class HybridAgent_opt:
       self.post_mean = np.zeros((self._n_actions, self.n_states))
       self.post_variance = np.ones((self._n_actions, self.n_states)) * 5
       self.kalman_gain = np.zeros((self._n_actions, self.n_states))
-      print("Priors reinitialized for a new session.")
 
   def get_choice_probs(self, state) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
