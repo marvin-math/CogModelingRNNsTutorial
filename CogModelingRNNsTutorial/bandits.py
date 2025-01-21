@@ -472,6 +472,7 @@ class HybridAgent_opt:
     self.n_states = n_states
     self.beta = beta
     self.gamma = gamma
+    self.trials_per_session = trials_per_session
     self.current_trial = 0  # Track the trial number within the task
 
     # Initialize priors
