@@ -458,7 +458,9 @@ class HybridAgent_opt:
       n_states,
       innov_variance = 100,
       noise_variance = 10,
-      n_actions: int = 2):
+      n_actions: int = 2,
+      trials_per_session=10
+):
     """Update the agent after one step of the task.
 
 
@@ -470,24 +472,19 @@ class HybridAgent_opt:
     self.n_states = n_states
     self.beta = beta
     self.gamma = gamma
-    self.new_sess()
-    self.identity = "hybrid"
+    self.current_trial = 0  # Track the trial number within the task
 
+    # Initialize priors
+    self.reset_priors()
 
-  def new_sess(self):
-    """Reset the agent for the beginning of a new session."""
-    #self.kalman_gain = np.zeros(self._n_actions)
-    #self.post_variance = np.ones(self._n_actions) * 10
-    #self.post_mean = np.zeros(self._n_actions)
-    #self.V_t = 0
-    #self.P_thompson = np.zeros(self._n_actions‚)
-    self.V_t = np.zeros(self.n_states)
-    self.P_a0_hybrid = np.zeros(self.n_states)
-    self.post_mean = np.zeros((self._n_actions, self.n_states))
-    self.post_variance = np.ones((self._n_actions, self.n_states)) * 5
-    self.kalman_gain = np.zeros((self._n_actions, self.n_states))
-
-    print("new session in the agent started")
+  def reset_priors(self):
+      """Reinitialize the priors for a new session."""
+      self.V_t = np.zeros(self.n_states)
+      self.P_a0_hybrid = np.zeros(self.n_states)
+      self.post_mean = np.zeros((self._n_actions, self.n_states))
+      self.post_variance = np.ones((self._n_actions, self.n_states)) * 5
+      self.kalman_gain = np.zeros((self._n_actions, self.n_states))
+      print("Priors reinitialized for a new session.")
 
   def get_choice_probs(self, state) -> np.ndarray:
     """Compute the choice probabilities as softmax over q."""
@@ -524,25 +521,27 @@ class HybridAgent_opt:
       choice: The choice made by the agent. 0 or 1
       reward: The reward received by the agent.
     """
+    for i in range(self._n_actions):
+      if choice == i:
 
-    if state < self.n_states - 1:
+        self.kalman_gain[i][state] = self.post_variance[i][state] / (
+                  self.post_variance[i][state] + self.noise_variance)
+        # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
+        # self.innov_variance + self.noise_variance)
+        # else:
+        # self.kalman_gain[i][state] = 0
+        self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
+        self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
+          state] * (reward - self.post_mean[i][state])
 
-      for i in range(self._n_actions):
-        if choice == i:
+      else:
+        self.post_variance[i][state + 1] = self.post_variance[i][state]
+        self.post_mean[i][state + 1] = self.post_mean[i][state]
 
-          self.kalman_gain[i][state] = self.post_variance[i][state] / (
-                    self.post_variance[i][state] + self.noise_variance)
-          # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
-          # self.innov_variance + self.noise_variance)
-          # else:
-          # self.kalman_gain[i][state] = 0
-          self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
-          self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
-            state] * (reward - self.post_mean[i][state])
-
-        else:
-          self.post_variance[i][state + 1] = self.post_variance[i][state]
-          self.post_mean[i][state + 1] = self.post_mean[i][state]
+      # Increment trial counter and check for session reset
+      self.current_trial += 1
+      if self.current_trial % self.trials_per_session == 0:
+          self.reset_priors()
 
 
   @property
