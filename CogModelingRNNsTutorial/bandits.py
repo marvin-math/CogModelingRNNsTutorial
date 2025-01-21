@@ -346,12 +346,12 @@ class HybridAgent:
 
   def __init__(
       self,
+      beta,
+      gamma,
       innov_variance = 100,
       noise_variance = 10,
       n_states = 10,
-      n_actions: int = 2,
-      beta = 1,
-      gamma = 2):
+      n_actions: int = 2,):
     """Update the agent after one step of the task.
 
 
