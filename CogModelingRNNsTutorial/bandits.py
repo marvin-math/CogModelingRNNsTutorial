@@ -453,9 +453,9 @@ class HybridAgent_opt:
 
   def __init__(
       self,
-      n_states,
       beta,
       gamma,
+      n_states,
       innov_variance = 100,
       noise_variance = 10,
       n_actions: int = 2):
