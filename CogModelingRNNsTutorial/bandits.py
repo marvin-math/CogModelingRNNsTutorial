@@ -472,8 +472,8 @@ class HybridAgent_opt:
     self.n_states = n_states
     self.beta = beta
     self.gamma = gamma
-    self.trials_per_session = trials_per_session
     self.current_trial = 0  # Track the trial number within the task
+    self.trials_per_session = trials_per_session
 
     # Initialize priors
     self.reset_priors()
@@ -522,24 +522,27 @@ class HybridAgent_opt:
       choice: The choice made by the agent. 0 or 1
       reward: The reward received by the agent.
     """
-    for i in range(self._n_actions):
-      if choice == i:
 
-        self.kalman_gain[i][state] = self.post_variance[i][state] / (
-                  self.post_variance[i][state] + self.noise_variance)
-        # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
-        # self.innov_variance + self.noise_variance)
-        # else:
-        # self.kalman_gain[i][state] = 0
-        self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
-        self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
-          state] * (reward - self.post_mean[i][state])
+    if state < self.n_states - 1:
 
-      else:
-        self.post_variance[i][state + 1] = self.post_variance[i][state]
-        self.post_mean[i][state + 1] = self.post_mean[i][state]
+      for i in range(self._n_actions):
+        if choice == i:
 
-      # Increment trial counter and check for session reset
+          self.kalman_gain[i][state] = self.post_variance[i][state] / (
+                    self.post_variance[i][state] + self.noise_variance)
+          # self.kalman_gain[i][state] = (self.post_variance[i] + self.innov_variance) / (self.post_variance[i] +
+          # self.innov_variance + self.noise_variance)
+          # else:
+          # self.kalman_gain[i][state] = 0
+          self.post_variance[i][state + 1] = (1 - self.kalman_gain[i][state]) * self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state] + self.kalman_gain[i][
+            state] * (reward - self.post_mean[i][state])
+
+        else:
+          self.post_variance[i][state + 1] = self.post_variance[i][state]
+          self.post_mean[i][state + 1] = self.post_mean[i][state]
+
+              # Increment trial counter and check for session reset
       self.current_trial += 1
       if self.current_trial % self.trials_per_session == 0:
           self.reset_priors()
