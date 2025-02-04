@@ -474,3 +474,52 @@ def get_initial_state(make_network: Callable[[], hk.RNNCore],
 
   return initial_state
 
+#@title Compute log-likelihood and pseudo R-squared
+def compute_log_likelihood(dataset, model_fun, params):
+  xs, actual_choices = next(dataset)
+  n_trials_per_session, n_sessions = actual_choices.shape[:2]
+  
+  # Evaluate the model on the inputs.
+  model_outputs, model_states = rnn_utils.eval_model(model_fun, params, xs)
+  
+  # Compute log-probabilities via log-softmax over the first two outputs.
+  predicted_log_choice_probabilities = np.array(jax.nn.log_softmax(model_outputs[:, :, :2]))
+  
+  # Determine the predicted choices: take the argmax over the probability for each trial.
+  predicted_choices = np.argmax(predicted_log_choice_probabilities, axis=-1)
+  
+  correct = 0  # Counter for correct predictions.
+  total = 0    # Total number of valid trials.
+  
+  log_likelihood = 0
+  n = 0  # Total number of valid trials across sessions.
+  
+  # Loop over sessions and trials.
+  for sess_i in range(n_sessions):
+    for trial_i in range(n_trials_per_session):
+      actual_choice = int(actual_choices[trial_i, sess_i])
+      if actual_choice >= 0:  # Ignore invalid trials.
+        # Accumulate log-likelihood for the observed choice.
+        log_likelihood += predicted_log_choice_probabilities[trial_i, sess_i, actual_choice]
+        # Count correct predictions.
+        if predicted_choices[trial_i, sess_i] == actual_choice:
+          correct += 1
+        n += 1
+  
+  # Compute the normalized likelihood (geometric mean of probabilities).
+  normalized_likelihood = np.exp(log_likelihood / n)
+  accuracy = correct / n if n > 0 else 0
+  
+  # Compute the null model log-likelihood assuming a chance model with p = 0.5.
+  # For binary choices, log(0.5) is the log-probability per trial.
+  null_log_likelihood = n * np.log(0.5)
+  
+  # McFadden’s pseudo R-squared.
+  pseudo_R2 = 1 - (log_likelihood / null_log_likelihood)
+  
+  print(f'Accuracy: {100 * accuracy:.1f}%')
+  print(f'Normalized Likelihood: {100 * normalized_likelihood:.1f}%')
+  print(f'Pseudo R-squared (McFadden): {pseudo_R2:.4f}')
+  
+  return normalized_likelihood, xs, actual_choices, predicted_log_choice_probabilities, accuracy, pseudo_R2
+

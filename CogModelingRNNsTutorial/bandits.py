@@ -11,7 +11,7 @@ import numpy as np
 from scipy.stats import norm
 
 
-from . import rnn_utils
+import rnn_utils
 DatasetRNN = rnn_utils.DatasetRNN
 
 
