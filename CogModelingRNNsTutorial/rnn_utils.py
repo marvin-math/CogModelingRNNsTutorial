@@ -169,7 +169,9 @@ def train_model(
 
   # PARSE INPUTS
   if random_key is None:
-    random_key = jax.random.PRNGKey(0)
+    seed = np.random.randint(0, 2**32 - 1)  # Ensure fresh key per run
+    random_key = jax.random.PRNGKey(seed)
+    print("random key")
   # If params have not been supplied, start training from scratch
   if params is None:
     random_key, key1 = jax.random.split(random_key)
@@ -480,7 +482,7 @@ def compute_log_likelihood(dataset, model_fun, params):
   n_trials_per_session, n_sessions = actual_choices.shape[:2]
   
   # Evaluate the model on the inputs.
-  model_outputs, model_states = rnn_utils.eval_model(model_fun, params, xs)
+  model_outputs, model_states = eval_model(model_fun, params, xs)
   
   # Compute log-probabilities via log-softmax over the first two outputs.
   predicted_log_choice_probabilities = np.array(jax.nn.log_softmax(model_outputs[:, :, :2]))
